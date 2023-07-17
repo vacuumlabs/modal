@@ -9,6 +9,21 @@ import {
 } from '@walletconnect/modal-core'
 import type { LitElement } from 'lit'
 
+// See https://stackoverflow.com/questions/71873824/copy-text-to-clipboard-cannot-read-properties-of-undefined-reading-writetext
+function unsecuredCopyToClipboard(text: string) {
+  const textArea = document.createElement('textarea')
+  textArea.value = text
+  document.body.appendChild(textArea)
+  textArea.focus()
+  textArea.select()
+  try {
+    document.execCommand('copy')
+  } catch (err) {
+    console.error('Unable to copy to clipboard', err)
+  }
+  document.body.removeChild(textArea)
+}
+
 export const UiUtil = {
   MOBILE_BREAKPOINT: 600,
 
@@ -111,9 +126,13 @@ export const UiUtil = {
     const { walletConnectUri } = OptionsCtrl.state
     if (walletConnectUri) {
       try {
-        await navigator.clipboard.writeText(walletConnectUri)
+        if (window.isSecureContext) {
+          await navigator.clipboard.writeText(walletConnectUri)
+        } else {
+          unsecuredCopyToClipboard(walletConnectUri)
+        }
         ToastCtrl.openToast('Link copied', 'success')
-      } catch {
+      } catch (e) {
         ToastCtrl.openToast('Failed to copy', 'error')
       }
     }
